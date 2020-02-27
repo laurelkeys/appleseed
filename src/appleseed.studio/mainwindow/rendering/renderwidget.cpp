@@ -202,7 +202,8 @@ namespace
 void RenderWidget::highlight_tile(
     const Frame&    frame,
     const size_t    tile_x,
-    const size_t    tile_y)
+    const size_t    tile_y,
+    const size_t    thread_index)
 {
     QMutexLocker locker(&m_mutex);
 
@@ -231,7 +232,16 @@ void RenderWidget::highlight_tile(
 
     // Draw a bracket around the tile.
     const size_t BracketExtent = 5;
-    const std::uint8_t BracketColor[3] = { 255, 255, 255 };
+    std::uint8_t BracketColor[3] = { 255, 90, 17 }; // appleseed's orange
+    switch (thread_index)
+    {
+        case 0: BracketColor[0] =   0; BracketColor[1] =   0; BracketColor[2] =   0; break; // white
+        case 1: BracketColor[0] = 255; BracketColor[1] =   0; BracketColor[2] =   0; break; // red
+        case 2: BracketColor[0] =   0; BracketColor[1] = 255; BracketColor[2] =   0; break; // green
+        case 3: BracketColor[0] =   0; BracketColor[1] =   0; BracketColor[2] = 255; break; // blue
+        case 4: BracketColor[0] = 255; BracketColor[1] =   0; BracketColor[2] = 255; break; // magenta
+        default: break; // orange
+    }
     draw_bracket(
         dest,
         width,

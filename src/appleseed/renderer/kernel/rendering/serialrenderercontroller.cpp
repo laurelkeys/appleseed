@@ -199,7 +199,7 @@ void SerialRendererController::exec_callback(const PendingTileCallback& cb)
         break;
 
       case PendingTileCallback::OnTileBegin:
-        m_tile_callback->on_tile_begin(cb.m_frame, cb.m_tile_x, cb.m_tile_y);
+        m_tile_callback->on_tile_begin(cb.m_frame, cb.m_tile_x, cb.m_tile_y, -2); // FIXME
         break;
 
       case PendingTileCallback::OnTileEnd:

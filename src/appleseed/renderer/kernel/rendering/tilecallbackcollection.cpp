@@ -72,10 +72,11 @@ namespace
         void on_tile_begin(
             const Frame*            frame,
             const size_t            tile_x,
-            const size_t            tile_y) override
+            const size_t            tile_y,
+            const size_t            thread_index) override
         {
             for (ITileCallback* callback : m_callbacks)
-                callback->on_tile_begin(frame, tile_x, tile_y);
+                callback->on_tile_begin(frame, tile_x, tile_y, thread_index);
         }
         
         void on_tile_end(

@@ -71,7 +71,8 @@ class APPLESEED_DLLSYMBOL ITileCallback
     virtual void on_tile_begin(
         const Frame*            frame,
         const size_t            tile_x,
-        const size_t            tile_y) = 0;
+        const size_t            tile_y,
+        const size_t            thread_index) = 0;
 
     // This method is called after a tile is rendered.
     virtual void on_tile_end(
@@ -102,7 +103,7 @@ class APPLESEED_DLLSYMBOL ITileCallbackFactory
 {
   public:
     // Return a new tile callback instance.
-    virtual ITileCallback* create() = 0;
+    virtual ITileCallback* create() = 0; // FIXME pass thread_index
 };
 
 }   // namespace renderer

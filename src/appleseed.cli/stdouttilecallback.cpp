@@ -82,14 +82,15 @@ namespace
         void on_tile_begin(
             const Frame*        frame,
             const size_t        tile_x,
-            const size_t        tile_y) override
+            const size_t        tile_y,
+            const size_t        thread_index) override
         {
             boost::mutex::scoped_lock lock(m_mutex);
 
 #ifdef _WIN32
             const int old_stdout_mode = _setmode(_fileno(stdout), _O_BINARY);
 #endif
-            send_highlight_tile(*frame, tile_x, tile_y);
+            send_highlight_tile(*frame, tile_x, tile_y);//FIXME
 
             fflush(stdout);
 #ifdef _WIN32

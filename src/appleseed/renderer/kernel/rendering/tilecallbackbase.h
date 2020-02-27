@@ -64,7 +64,8 @@ class TileCallbackBase
     void on_tile_begin(
         const Frame*            frame,
         const size_t            tile_x,
-        const size_t            tile_y) override
+        const size_t            tile_y,
+        const size_t            thread_index) override
     {
     }
 
