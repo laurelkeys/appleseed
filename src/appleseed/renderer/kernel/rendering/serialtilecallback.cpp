@@ -72,7 +72,7 @@ namespace
             const size_t            tile_y,
             const size_t            thread_index) override
         {
-            m_controller->add_on_tile_begin_callback(frame, tile_x, tile_y);//FIXME
+            m_controller->add_on_tile_begin_callback(frame, tile_x, tile_y, thread_index);
         }
 
         void on_tile_end(

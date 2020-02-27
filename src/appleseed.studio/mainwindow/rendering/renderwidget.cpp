@@ -235,11 +235,10 @@ void RenderWidget::highlight_tile(
     std::uint8_t BracketColor[3] = { 255, 90, 17 }; // appleseed's orange
     switch (thread_index)
     {
-        case 0: BracketColor[0] =   0; BracketColor[1] =   0; BracketColor[2] =   0; break; // white
+        case 0: BracketColor[0] = 255; BracketColor[1] = 255; BracketColor[2] = 255; break; // white
         case 1: BracketColor[0] = 255; BracketColor[1] =   0; BracketColor[2] =   0; break; // red
         case 2: BracketColor[0] =   0; BracketColor[1] = 255; BracketColor[2] =   0; break; // green
         case 3: BracketColor[0] =   0; BracketColor[1] =   0; BracketColor[2] = 255; break; // blue
-        case 4: BracketColor[0] = 255; BracketColor[1] =   0; BracketColor[2] = 255; break; // magenta
         default: break; // orange
     }
     draw_bracket(

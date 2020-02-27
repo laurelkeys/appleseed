@@ -81,7 +81,8 @@ class SerialRendererController
     void add_on_tile_begin_callback(
         const Frame*            frame,
         const size_t            tile_x,
-        const size_t            tile_y);
+        const size_t            tile_y,
+        const size_t            thread_index);
 
     void add_on_tile_end_callback(
         const Frame*            frame,
@@ -117,6 +118,7 @@ class SerialRendererController
         std::uint64_t   m_samples;
         double          m_samples_per_pixel;
         std::uint64_t   m_samples_per_second;
+        size_t          m_thread_index;
     };
 
     IRendererController*                m_controller;

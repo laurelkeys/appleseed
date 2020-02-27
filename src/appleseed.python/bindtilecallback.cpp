@@ -94,13 +94,14 @@ namespace
             ScopedGILLock lock;
 
             if (bpy::override f = this->get_override("on_tile_begin"))
-                f(bpy::ptr(frame), tile_x, tile_y, thread_index);//FIXME
+                f(bpy::ptr(frame), tile_x, tile_y, thread_index);
         }
 
         void default_on_tile_begin(
             const Frame*            frame,
             const size_t            tile_x,
-            const size_t            tile_y)
+            const size_t            tile_y,
+            const size_t            thread_index)
         {
         }
 
