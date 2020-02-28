@@ -90,7 +90,7 @@ namespace
 #ifdef _WIN32
             const int old_stdout_mode = _setmode(_fileno(stdout), _O_BINARY);
 #endif
-            send_highlight_tile(*frame, tile_x, tile_y, thread_index);
+            send_highlight_tile(*frame, tile_x, tile_y);
 
             fflush(stdout);
 #ifdef _WIN32
@@ -191,8 +191,7 @@ namespace
         void send_highlight_tile(
             const Frame&        frame,
             const size_t        tile_x,
-            const size_t        tile_y,
-            const size_t        thread_index) const
+            const size_t        tile_y) const
         {
             // Compute the coordinates in the image of the top-left corner of the tile.
             const CanvasProperties& frame_props = frame.image().properties();
@@ -217,8 +216,6 @@ namespace
                 static_cast<std::uint32_t>(h)
             };
             fwrite(header, sizeof(header), 1, stdout);
-
-            // FIXME thread_index
         }
 
         void send_tile(
