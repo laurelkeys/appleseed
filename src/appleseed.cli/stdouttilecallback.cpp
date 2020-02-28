@@ -83,7 +83,8 @@ namespace
             const Frame*        frame,
             const size_t        tile_x,
             const size_t        tile_y,
-            const size_t        thread_index) override
+            const size_t        thread_index,
+            const size_t        nb_threads) override
         {
             boost::mutex::scoped_lock lock(m_mutex);
 
