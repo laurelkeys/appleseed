@@ -232,14 +232,15 @@ void RenderWidget::highlight_tile(
 
     // Draw a bracket around the tile.
     const size_t BracketExtent = 5;
-    std::uint8_t BracketColor[3] = { 255, 90, 17 }; // appleseed's orange
-    switch (thread_index)
-    {
-        case 0: BracketColor[0] = 255; BracketColor[1] = 255; BracketColor[2] = 255; break; // white
-        case 1: BracketColor[0] = 255; BracketColor[1] =   0; BracketColor[2] =   0; break; // red
-        case 2: BracketColor[0] =   0; BracketColor[1] = 255; BracketColor[2] =   0; break; // green
-        case 3: BracketColor[0] =   0; BracketColor[1] =   0; BracketColor[2] = 255; break; // blue
-        default: break; // orange
+    std::uint8_t BracketColor[3] = { 255, 255, 255 }; // white
+    if (thread_index >= 0) {
+        // Choose one color per thread (see https://www.shadertoy.com/view/wlKXDm).
+        float t = TwoPi<float>() * (thread_index / 4.0f); // FIXME pass nb_threads
+        float cos_t = std::cos(t);
+        float sin_t = std::sin(t);
+        BracketColor[0] = 128 + static_cast<std::uint8_t>(127.5f * cos_t);
+        BracketColor[1] = 128 + static_cast<std::uint8_t>(127.5f * (-0.5f * cos_t - 0.866f * sin_t));
+        BracketColor[2] = 128 + static_cast<std::uint8_t>(127.5f * (-0.5f * cos_t + 0.866f * sin_t));
     }
     draw_bracket(
         dest,

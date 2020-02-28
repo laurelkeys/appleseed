@@ -103,7 +103,7 @@ class APPLESEED_DLLSYMBOL ITileCallbackFactory
 {
   public:
     // Return a new tile callback instance.
-    virtual ITileCallback* create() = 0; // FIXME pass thread_index
+    virtual ITileCallback* create() = 0;
 };
 
 }   // namespace renderer
