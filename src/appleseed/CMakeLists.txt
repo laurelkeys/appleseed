@@ -2004,6 +2004,8 @@ set (renderer_modeling_postprocessingstage_sources
     renderer/modeling/postprocessingstage/vignettepostprocessingstage.h
     renderer/modeling/postprocessingstage/effect/additiveblendapplier.cpp
     renderer/modeling/postprocessingstage/effect/additiveblendapplier.h
+    renderer/modeling/postprocessingstage/effect/brightpassapplier.cpp
+    renderer/modeling/postprocessingstage/effect/brightpassapplier.h
     renderer/modeling/postprocessingstage/effect/imageeffectapplier.cpp
     renderer/modeling/postprocessingstage/effect/imageeffectapplier.h
     renderer/modeling/postprocessingstage/effect/imageeffectjob.cpp
