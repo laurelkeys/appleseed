@@ -2006,6 +2006,10 @@ set (renderer_modeling_postprocessingstage_sources
     renderer/modeling/postprocessingstage/effect/additiveblendapplier.h
     renderer/modeling/postprocessingstage/effect/brightpassapplier.cpp
     renderer/modeling/postprocessingstage/effect/brightpassapplier.h
+    renderer/modeling/postprocessingstage/effect/downsampleapplier.cpp
+    renderer/modeling/postprocessingstage/effect/downsampleapplier.h
+    renderer/modeling/postprocessingstage/effect/upsampleapplier.cpp
+    renderer/modeling/postprocessingstage/effect/upsampleapplier.h
     renderer/modeling/postprocessingstage/effect/imageeffectapplier.cpp
     renderer/modeling/postprocessingstage/effect/imageeffectapplier.h
     renderer/modeling/postprocessingstage/effect/imageeffectjob.cpp
