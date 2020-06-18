@@ -1986,6 +1986,7 @@ source_group ("renderer\\modeling\\object" FILES
 )
 
 set (renderer_modeling_postprocessingstage_sources
+    renderer/modeling/postprocessingstage/Instrumentor.h
     renderer/modeling/postprocessingstage/bloompostprocessingstage.cpp
     renderer/modeling/postprocessingstage/bloompostprocessingstage.h
     renderer/modeling/postprocessingstage/colormappostprocessingstage.cpp
@@ -2008,8 +2009,8 @@ set (renderer_modeling_postprocessingstage_sources
     renderer/modeling/postprocessingstage/effect/brightpassapplier.h
     renderer/modeling/postprocessingstage/effect/resampleapplier.cpp
     renderer/modeling/postprocessingstage/effect/resampleapplier.h
-    renderer/modeling/postprocessingstage/effect/upsampleandblendapplier.cpp
-    renderer/modeling/postprocessingstage/effect/upsampleandblendapplier.h
+    renderer/modeling/postprocessingstage/effect/upsampleapplier.cpp
+    renderer/modeling/postprocessingstage/effect/upsampleapplier.h
     renderer/modeling/postprocessingstage/effect/imageeffectapplier.cpp
     renderer/modeling/postprocessingstage/effect/imageeffectapplier.h
     renderer/modeling/postprocessingstage/effect/imageeffectjob.cpp
