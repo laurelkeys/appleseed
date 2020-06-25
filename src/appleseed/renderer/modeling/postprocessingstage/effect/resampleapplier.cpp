@@ -153,6 +153,8 @@ void ResampleApplier::apply(
         static_cast<float>(m_src_width - 1) / (dst_width - 1),
         static_cast<float>(m_src_height - 1) / (dst_height - 1));
 
+#define REFETCH_PIXELS 1
+#if REFETCH_PIXELS
     for (std::size_t y = 0; y < tile_height; ++y)
     {
         for (std::size_t x = 0; x < tile_width; ++x)
@@ -203,6 +205,207 @@ void ResampleApplier::apply(
             tile.set_pixel(x, y, result);
         }
     }
+#else
+    if (m_mode == SamplingMode::UP)
+    {
+        for (std::size_t y = 0; y < tile_height; ++y)
+        {
+            for (std::size_t x = 0; x < tile_width; ++x)
+            {
+                // Map the pixel coordinate from image to src_image, then shift it by m_border_size.
+                const float fy = (y + tile_offset.y) * scaling_factor.y + m_border_size;
+                const float fx = (x + tile_offset.x) * scaling_factor.x + m_border_size;
+
+                const Color3f result = (
+                    blerp(m_src_image_with_border, fx - 1.0f, fy) +
+                    blerp(m_src_image_with_border, fx + 1.0f, fy) +
+                    blerp(m_src_image_with_border, fx, fy - 1.0f) +
+                    blerp(m_src_image_with_border, fx, fy + 1.0f) +
+                    2.0f * (
+                        blerp(m_src_image_with_border, fx - 0.5f, fy - 0.5f) +
+                        blerp(m_src_image_with_border, fx - 0.5f, fy + 0.5f) +
+                        blerp(m_src_image_with_border, fx + 0.5f, fy - 0.5f) +
+                        blerp(m_src_image_with_border, fx + 0.5f, fy + 0.5f)))
+                    / 12.0f;
+
+                tile.set_pixel(x, y, result);
+            }
+        }
+    }
+    else // m_mode == SamplingMode::DOWN
+    {
+        for (std::size_t y = 0; y < tile_height; ++y)
+        {
+            for (std::size_t x = 0; x < tile_width; ++x)
+            {
+                // Map the pixel coordinate from image to src_image, then shift it by m_border_size.
+                const float fy = (y + tile_offset.y) * scaling_factor.y + m_border_size;
+                const float fx = (x + tile_offset.x) * scaling_factor.x + m_border_size;
+
+                const int iy = static_cast<int>(fy);
+                const int ix = static_cast<int>(fx);
+
+                // Compute weights for bilinear interpolation.
+                const float wx1 = fx - ix;
+                const float wy1 = fy - iy;
+                const float wx0 = 1.0f - wx1;
+                const float wy0 = 1.0f - wy1;
+
+                const auto blerp_colors =
+                    [&](
+                        const Color3f   c00,
+                        const Color3f   c10,
+                        const Color3f   c01,
+                        const Color3f   c11) -> const Color3f
+                    {
+                        return
+                            c00 * wx0 * wy0 +
+                            c10 * wx1 * wy0 +
+                            c01 * wx0 * wy1 +
+                            c11 * wx1 * wy1;
+                    };
+
+                const Color3f result =
+                    [&]() -> const Color3f
+                    {
+                        // . .  .  .  .  . .
+                        // . A  B  C  D  E . +2
+                        // . F  G  H  I  J . +1
+                        // . K  L  M  N  O .  0
+                        // . P  Q  R  S  T . -1
+                        // . U  V  W  X  Y . -2
+                        // . .  .  .  .  . .
+                        //  -2 -1  0 +1 +2
+
+                        Color3f G; m_src_image_with_border.get_pixel(ix-1, iy+1, G);
+                        Color3f H; m_src_image_with_border.get_pixel(ix+0, iy+1, H);
+                        Color3f I; m_src_image_with_border.get_pixel(ix+1, iy+1, I);
+
+                        Color3f L; m_src_image_with_border.get_pixel(ix-1, iy+0, L);
+                        Color3f M; m_src_image_with_border.get_pixel(ix+0, iy+0, M);
+                        Color3f N; m_src_image_with_border.get_pixel(ix+1, iy+0, N);
+
+                        Color3f Q; m_src_image_with_border.get_pixel(ix-1, iy-1, Q);
+                        Color3f R; m_src_image_with_border.get_pixel(ix+0, iy-1, R);
+                        Color3f S; m_src_image_with_border.get_pixel(ix+1, iy-1, S);
+
+                        if (std::floor(fx) != std::floor(fx - 0.5f))
+                        {
+                            Color3f F; m_src_image_with_border.get_pixel(ix-2, iy+1, F);
+                            Color3f K; m_src_image_with_border.get_pixel(ix-2, iy+0, K);
+                            Color3f P; m_src_image_with_border.get_pixel(ix-2, iy-1, P);
+
+                            if (std::floor(fy) != std::floor(fy - 0.5f))
+                            {
+                                // Bottom-left pixel quadrant (00).
+                                // . . . . . . .
+                                // . . . . . . .
+                                // . F G H I . .
+                                // . K L M N . .
+                                // . P Q R S . .
+                                // . U V W X . .
+                                // . . . . . . .
+
+                                Color3f U; m_src_image_with_border.get_pixel(ix-2, iy-2, U);
+                                Color3f V; m_src_image_with_border.get_pixel(ix-1, iy-2, V);
+                                Color3f W; m_src_image_with_border.get_pixel(ix+0, iy-2, W);
+                                Color3f X; m_src_image_with_border.get_pixel(ix+1, iy-2, X);
+
+                                return (
+                                    4.0f * blerp_colors(Q, R, L, M) // center
+                                    + blerp_colors(K, L, F, G)      // top-left
+                                    + blerp_colors(M, N, H, I)      // top-right
+                                    + blerp_colors(U, V, P, Q)      // bottom-left
+                                    + blerp_colors(W, X, R, S)      // bottom-right
+                                ) / 8.0f;
+                            }
+                            else
+                            {
+                                // Top-left pixel quadrant (01).
+                                // . . . . . . .
+                                // . A B C D . .
+                                // . F G H I . .
+                                // . K L M N . .
+                                // . P Q R S . .
+                                // . . . . . . .
+                                // . . . . . . .
+
+                                Color3f A; m_src_image_with_border.get_pixel(ix-2, iy+2, A);
+                                Color3f B; m_src_image_with_border.get_pixel(ix-1, iy+2, B);
+                                Color3f C; m_src_image_with_border.get_pixel(ix+0, iy+2, C);
+                                Color3f D; m_src_image_with_border.get_pixel(ix+1, iy+2, D);
+
+                                return (
+                                    4.0f * blerp_colors(L, M, G, H) // center
+                                    + blerp_colors(F, G, A, B)      // top-left
+                                    + blerp_colors(H, I, C, D)      // top-right
+                                    + blerp_colors(P, Q, K, L)      // bottom-left
+                                    + blerp_colors(R, S, M, N)      // bottom-right
+                                ) / 8.0f;
+                            }
+                        }
+                        else
+                        {
+                            Color3f J; m_src_image_with_border.get_pixel(ix+2, iy+1, J);
+                            Color3f O; m_src_image_with_border.get_pixel(ix+2, iy+0, O);
+                            Color3f T; m_src_image_with_border.get_pixel(ix+2, iy-1, T);
+
+                            if (std::floor(fy) == std::floor(fy - 0.5f))
+                            {
+                                // Bottom-right pixel quadrant (10).
+                                // . . . . . . .
+                                // . . . . . . .
+                                // . . G H I J .
+                                // . . L M N O .
+                                // . . Q R S T .
+                                // . . V W X Y .
+                                // . . . . . . .
+
+                                Color3f V; m_src_image_with_border.get_pixel(ix-1, iy-2, V);
+                                Color3f W; m_src_image_with_border.get_pixel(ix+0, iy-2, W);
+                                Color3f X; m_src_image_with_border.get_pixel(ix+1, iy-2, X);
+                                Color3f Y; m_src_image_with_border.get_pixel(ix+2, iy-2, Y);
+
+                                return (
+                                    4.0f * blerp_colors(R, S, M, N) // center
+                                    + blerp_colors(L, M, G, H)      // top-left
+                                    + blerp_colors(N, O, I, J)      // top-right
+                                    + blerp_colors(V, W, Q, R)      // bottom-left
+                                    + blerp_colors(X, Y, S, T)      // bottom-right
+                                ) / 8.0f;
+                            }
+                            else
+                            {
+                                // Top-right pixel quadrant (11).
+                                // . . . . . . .
+                                // . . B C D E .
+                                // . . G H I J .
+                                // . . L M N O .
+                                // . . Q R S T .
+                                // . . . . . . .
+                                // . . . . . . .
+
+                                Color3f B; m_src_image_with_border.get_pixel(ix-1, iy+2, B);
+                                Color3f C; m_src_image_with_border.get_pixel(ix+0, iy+2, C);
+                                Color3f D; m_src_image_with_border.get_pixel(ix+1, iy+2, D);
+                                Color3f E; m_src_image_with_border.get_pixel(ix+2, iy+2, E);
+
+                                return (
+                                    4.0f * blerp_colors(M, N, H, I) // center
+                                    + blerp_colors(G, H, B, C)      // top-left
+                                    + blerp_colors(I, J, D, E)      // top-right
+                                    + blerp_colors(Q, R, L, M)      // bottom-left
+                                    + blerp_colors(S, T, N, O)      // bottom-right
+                                ) / 8.0f;
+                            }
+                        }
+                    }();
+
+                tile.set_pixel(x, y, result);
+            }
+        }
+    }
+#endif
 }
 
 }   // namespace renderer

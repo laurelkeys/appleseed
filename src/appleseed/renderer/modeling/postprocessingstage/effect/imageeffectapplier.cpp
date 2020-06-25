@@ -33,6 +33,7 @@
 #include "renderer/global/globallogger.h"
 #include "renderer/modeling/postprocessingstage/effect/imageeffectjob.h"
 #include "renderer/utility/paramarray.h"
+#include "renderer/modeling/postprocessingstage/Instrumentor.h" // XXX
 
 // appleseed.foundation headers.
 #include "foundation/image/image.h"
@@ -71,8 +72,10 @@ void ImageEffectApplier::apply_on_tiles(
         job_queue,
         thread_count);
 
+{ PROFILE_SCOPE("Start and wait until completion");
     job_manager.start();
     job_queue.wait_until_completion();
+}
 }
 
 }   // namespace renderer
