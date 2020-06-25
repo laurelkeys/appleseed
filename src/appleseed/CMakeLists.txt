@@ -1986,6 +1986,7 @@ source_group ("renderer\\modeling\\object" FILES
 )
 
 set (renderer_modeling_postprocessingstage_sources
+    renderer/modeling/postprocessingstage/Instrumentor.h # XXX
     renderer/modeling/postprocessingstage/bloompostprocessingstage.cpp
     renderer/modeling/postprocessingstage/bloompostprocessingstage.h
     renderer/modeling/postprocessingstage/colormappostprocessingstage.cpp

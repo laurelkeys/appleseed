@@ -35,6 +35,9 @@
 #include "foundation/image/tile.h"
 #include "foundation/math/ordering.h"
 
+// appleseed.renderer headers.
+#include "renderer/modeling/postprocessingstage/Instrumentor.h" // XXX
+
 // Standard headers.
 #include <cassert>
 
@@ -77,6 +80,7 @@ ImageEffectJobFactory::EffectJobVector ImageEffectJobFactory::create(
     Image&                      image,
     const ImageEffectApplier&   effect_applier) const
 {
+PROFILE_FUNCTION();
     // Retrieve image properties.
     const CanvasProperties& props = image.properties();
 

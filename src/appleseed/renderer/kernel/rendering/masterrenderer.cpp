@@ -48,6 +48,7 @@
 #include "renderer/modeling/project/renderingtimer.h"
 #include "renderer/modeling/scene/scene.h"
 #include "renderer/utility/settingsparsing.h"
+#include "renderer/modeling/postprocessingstage/Instrumentor.h" // XXX
 
 // appleseed.foundation headers.
 #include "foundation/image/canvasproperties.h"
@@ -528,6 +529,7 @@ struct MasterRenderer::Impl
         }
 
         // Execute post-processing stages.
+        Instrumentor::Get().BeginSession("Bloom post-processing stage");
         const size_t thread_count = get_rendering_thread_count(m_params);
         for (PostProcessingStage* stage : ordered_stages)
         {
@@ -536,6 +538,7 @@ struct MasterRenderer::Impl
             stage->execute(*frame, thread_count);
             invoke_tile_callbacks(*frame);
         }
+        Instrumentor::Get().EndSession();
     }
 
     void invoke_tile_callbacks(const Frame& frame)

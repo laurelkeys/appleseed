@@ -37,6 +37,7 @@
 #include "renderer/modeling/postprocessingstage/effect/resampleapplier.h"
 #include "renderer/modeling/postprocessingstage/effect/resamplex2applier.h"
 #include "renderer/modeling/postprocessingstage/postprocessingstage.h"
+#include "renderer/modeling/postprocessingstage/Instrumentor.h" // XXX
 
 // appleseed.foundation headers.
 #include "foundation/containers/dictionary.h"
@@ -131,6 +132,7 @@ namespace
             const CanvasProperties&     max_level_props,
             const std::size_t           max_tile_size)
         {
+PROFILE_FUNCTION();
             blur_pyramid_down.reserve(level_count);
             blur_pyramid_up.reserve(level_count);
 
@@ -160,6 +162,7 @@ namespace
 
         void execute(Frame& frame, const std::size_t thread_count) const override
         {
+PROFILE_FUNCTION();
             if (m_iterations == 0 || (m_intensity == 0.0f && !m_debug_blur))
                 return;
 
@@ -176,7 +179,7 @@ namespace
 
             // Copy the pixel format, but ignore the alpha channel.
             assert(props.m_channel_count == 4);
-            const std::size_t max_tile_size = 32;
+            const std::size_t max_tile_size = 32; // NOTE empirical value
             const CanvasProperties blur_props(
                 max_pyramid_width,
                 max_pyramid_height,
@@ -208,10 +211,11 @@ namespace
             const std::size_t shuffle_table[4] = { 0, 1, 2, Pixel::SkipChannel };
             Image prefiltered_image(image, props.m_pixel_format, shuffle_table);
 
+{ PROFILE_SCOPE("BrightPassApplier");
             // Filter out dark pixels.
             BrightPassApplier bright_pass(m_threshold, m_soft_threshold);
             bright_pass.apply_on_tiles(prefiltered_image, thread_count);
-
+}
             //
             // Create and initialize the blur buffer pyramids.
             //
@@ -240,46 +244,55 @@ namespace
             //
             // Downsample pass.
             //
-
+{ PROFILE_SCOPE("Downsample pass");
             ResampleX2Applier downsample(prefiltered_image, ResampleX2Applier::SamplingMode::HALVE);
             downsample.apply_on_tiles(blur_pyramid_down[0], thread_count);
 
             for (std::size_t level = 1; level < iterations; ++level)
             {
+const std::string _scope_name = "Level #" + std::to_string(level);
+PROFILE_SCOPE(_scope_name.c_str());
                 ResampleApplier downsample(blur_pyramid_down[level - 1], ResampleApplier::SamplingMode::DOWN);
                 downsample.apply_on_tiles(blur_pyramid_down[level], thread_count);
             }
-
+}
             //
             // Upsample and blend pass.
             //
-
+{ PROFILE_SCOPE("Upsample and blend pass");
             blur_pyramid_up[iterations - 1].copy_from(blur_pyramid_down[iterations - 1]);
 
             for (std::size_t level_plus_one = iterations - 1; level_plus_one > 0; --level_plus_one)
             {
+const std::string _scope_name = "Level #" + std::to_string(level_plus_one - 1);
+PROFILE_SCOPE(_scope_name.c_str());
                 ResampleApplier upsample(blur_pyramid_up[level_plus_one], ResampleApplier::SamplingMode::UP);
                 upsample.apply_on_tiles(blur_pyramid_up[level_plus_one - 1], thread_count);
 
+{ PROFILE_SCOPE("AdditiveBlendApplier");
                 // Blend each upsampled buffer with the downsample buffer of the same level.
                 AdditiveBlendApplier additive_blend(blur_pyramid_down[level_plus_one - 1]);
                 additive_blend.apply_on_tiles(blur_pyramid_up[level_plus_one - 1], thread_count);
+}
             }
-
+}
             //
             // Resolve pass.
             //
-
+{ PROFILE_SCOPE("Resolve pass");
             Image bloom_target(prefiltered_image.properties());
 
             ResampleX2Applier upsample(blur_pyramid_up[0], ResampleX2Applier::SamplingMode::DOUBLE);
             upsample.apply_on_tiles(bloom_target, thread_count);
 
+{ PROFILE_SCOPE("AdditiveBlendApplier");
             AdditiveBlendApplier additive_blend(
                 bloom_target,
                 m_debug_blur ? 1.0f : m_intensity,
                 m_debug_blur ? 0.0f : 1.0f);
             additive_blend.apply_on_tiles(image, thread_count);
+}
+}
         }
 
       private:
@@ -295,6 +308,7 @@ namespace
             const CanvasProperties&     blur_target_props,
             const std::size_t           thread_count) const
         {
+PROFILE_FUNCTION();
             // Downsample the prefiltered image.
             Image blur_target(blur_target_props);
             ResampleApplier downsample(prefiltered_image, ResampleApplier::SamplingMode::DOWN);
