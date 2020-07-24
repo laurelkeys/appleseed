@@ -1986,6 +1986,8 @@ source_group ("renderer\\modeling\\object" FILES
 )
 
 set (renderer_modeling_postprocessingstage_sources
+    renderer/modeling/postprocessingstage/bloompostprocessingstage.cpp
+    renderer/modeling/postprocessingstage/bloompostprocessingstage.h
     renderer/modeling/postprocessingstage/colormappostprocessingstage.cpp
     renderer/modeling/postprocessingstage/colormappostprocessingstage.h
     renderer/modeling/postprocessingstage/ipostprocessingstagefactory.cpp
@@ -2002,10 +2004,18 @@ set (renderer_modeling_postprocessingstage_sources
     renderer/modeling/postprocessingstage/tonemappostprocessingstage.h
     renderer/modeling/postprocessingstage/vignettepostprocessingstage.cpp
     renderer/modeling/postprocessingstage/vignettepostprocessingstage.h
+    renderer/modeling/postprocessingstage/effect/additiveblendapplier.cpp
+    renderer/modeling/postprocessingstage/effect/additiveblendapplier.h
+    renderer/modeling/postprocessingstage/effect/brightpassapplier.cpp
+    renderer/modeling/postprocessingstage/effect/brightpassapplier.h
     renderer/modeling/postprocessingstage/effect/imageeffectapplier.cpp
     renderer/modeling/postprocessingstage/effect/imageeffectapplier.h
     renderer/modeling/postprocessingstage/effect/imageeffectjob.cpp
     renderer/modeling/postprocessingstage/effect/imageeffectjob.h
+    renderer/modeling/postprocessingstage/effect/resampleapplier.cpp
+    renderer/modeling/postprocessingstage/effect/resampleapplier.h
+    renderer/modeling/postprocessingstage/effect/resamplex2applier.cpp
+    renderer/modeling/postprocessingstage/effect/resamplex2applier.h
     renderer/modeling/postprocessingstage/effect/tonemapapplier.cpp
     renderer/modeling/postprocessingstage/effect/tonemapapplier.h
     renderer/modeling/postprocessingstage/effect/vignetteapplier.cpp

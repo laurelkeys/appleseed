@@ -240,6 +240,7 @@ struct MasterRenderer::Impl
 
             // Insert post-processing time into frame's render info.
             render_info.insert("post_processing_time", stopwatch.get_seconds());
+            RENDERER_LOG_INFO("post-processing time: %s.", pretty_time(stopwatch.get_seconds()).c_str());
 
             switch (result.m_status)
             {
