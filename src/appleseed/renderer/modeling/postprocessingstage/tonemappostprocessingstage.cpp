@@ -71,7 +71,13 @@ namespace
     constexpr const ToneMapOperator AcesNarkowicz       { "ACES (Narkowicz)",       "aces_narkowicz" };
     constexpr const ToneMapOperator AcesUnreal          { "ACES (Unreal)",          "aces_unreal" };
     constexpr const ToneMapOperator FilmicHejl          { "Filmic (Hejl)",          "filmic_hejl" };
-    constexpr const ToneMapOperator FilmicUncharted     { "Filmic (Uncharted)",     "filmic_uncharted" };
+
+    // TODO choose a single one after testing different presets
+    // constexpr const ToneMapOperator FilmicUncharted     { "Filmic (Uncharted)",     "filmic_uncharted" };
+    constexpr const ToneMapOperator FilmicUncharted1    { "Filmic (Uncharted) 1",   "filmic_uncharted1" };
+    constexpr const ToneMapOperator FilmicUncharted2    { "Filmic (Uncharted) 2",   "filmic_uncharted2" };
+    constexpr const ToneMapOperator FilmicUncharted3    { "Filmic (Uncharted) 3",   "filmic_uncharted3" };
+
     constexpr const ToneMapOperator Piecewise           { "Piecewise",              "piecewise" };
     constexpr const ToneMapOperator Reinhard            { "Reinhard",               "reinhard" };
     constexpr const ToneMapOperator ReinhardExtended    { "Reinhard (Extended)",    "reinhard_extended" };
@@ -82,7 +88,9 @@ namespace
         AcesNarkowicz.id,               \
         AcesUnreal.id,                  \
         FilmicHejl.id,                  \
-        FilmicUncharted.id,             \
+        FilmicUncharted1.id,             \
+        FilmicUncharted2.id,             \
+        FilmicUncharted3.id,             \
         Piecewise.id,                   \
         Reinhard.id,                    \
         ReinhardExtended.id,            \
@@ -96,7 +104,9 @@ namespace
         .INSERT_TONE_MAP_OPERATOR(AcesNarkowicz)        \
         .INSERT_TONE_MAP_OPERATOR(AcesUnreal)           \
         .INSERT_TONE_MAP_OPERATOR(FilmicHejl)           \
-        .INSERT_TONE_MAP_OPERATOR(FilmicUncharted)      \
+        .INSERT_TONE_MAP_OPERATOR(FilmicUncharted1)      \
+        .INSERT_TONE_MAP_OPERATOR(FilmicUncharted2)      \
+        .INSERT_TONE_MAP_OPERATOR(FilmicUncharted3)      \
         .INSERT_TONE_MAP_OPERATOR(Piecewise)            \
         .INSERT_TONE_MAP_OPERATOR(Reinhard)             \
         .INSERT_TONE_MAP_OPERATOR(ReinhardExtended)     \
@@ -152,6 +162,8 @@ namespace
 
             //@Todo add new TMOs
 
+            #define GET_OPT(name, default_value) m_params.get_optional(name, default_value, context)
+
             // Initialize the tone map applier.
             if (tone_map_operator == AcesNarkowicz.id)
             {
@@ -165,6 +177,7 @@ namespace
             {
                 m_tone_map = new FilmicHejlApplier();
             }
+#if 0
             else if (tone_map_operator == FilmicUncharted.id)
             {
                 const float A =
@@ -186,6 +199,47 @@ namespace
 
                 m_tone_map = new FilmicUnchartedApplier(A, B, C, D, E, F, W, exposure_bias);
             }
+#else
+            else if (tone_map_operator == FilmicUncharted1.id)
+            {
+                m_tone_map =
+                    new FilmicUnchartedApplier(
+                        GET_OPT("filmic_uncharted1_A", FilmicUnchartedApplier::DefaultA),
+                        GET_OPT("filmic_uncharted1_B", FilmicUnchartedApplier::DefaultB),
+                        GET_OPT("filmic_uncharted1_C", FilmicUnchartedApplier::DefaultC),
+                        GET_OPT("filmic_uncharted1_D", FilmicUnchartedApplier::DefaultD),
+                        GET_OPT("filmic_uncharted1_E", FilmicUnchartedApplier::DefaultE),
+                        GET_OPT("filmic_uncharted1_F", FilmicUnchartedApplier::DefaultF),
+                        GET_OPT("filmic_uncharted1_W", FilmicUnchartedApplier::DefaultW),
+                        GET_OPT("filmic_uncharted1_exposure_bias", FilmicUnchartedApplier::DefaultExposureBias));
+            }
+            else if (tone_map_operator == FilmicUncharted2.id)
+            {
+                m_tone_map =
+                    new FilmicUnchartedApplier(
+                        GET_OPT("filmic_uncharted2_A", FilmicUnchartedApplier::DefaultA),
+                        GET_OPT("filmic_uncharted2_B", FilmicUnchartedApplier::DefaultB),
+                        GET_OPT("filmic_uncharted2_C", FilmicUnchartedApplier::DefaultC),
+                        GET_OPT("filmic_uncharted2_D", FilmicUnchartedApplier::DefaultD),
+                        GET_OPT("filmic_uncharted2_E", FilmicUnchartedApplier::DefaultE),
+                        GET_OPT("filmic_uncharted2_F", FilmicUnchartedApplier::DefaultF),
+                        GET_OPT("filmic_uncharted2_W", FilmicUnchartedApplier::DefaultW),
+                        GET_OPT("filmic_uncharted2_exposure_bias", FilmicUnchartedApplier::DefaultExposureBias));
+            }
+            else if (tone_map_operator == FilmicUncharted3.id)
+            {
+                m_tone_map =
+                    new FilmicUnchartedApplier(
+                        GET_OPT("filmic_uncharted3_A", FilmicUnchartedApplier::DefaultA),
+                        GET_OPT("filmic_uncharted3_B", FilmicUnchartedApplier::DefaultB),
+                        GET_OPT("filmic_uncharted3_C", FilmicUnchartedApplier::DefaultC),
+                        GET_OPT("filmic_uncharted3_D", FilmicUnchartedApplier::DefaultD),
+                        GET_OPT("filmic_uncharted3_E", FilmicUnchartedApplier::DefaultE),
+                        GET_OPT("filmic_uncharted3_F", FilmicUnchartedApplier::DefaultF),
+                        GET_OPT("filmic_uncharted3_W", FilmicUnchartedApplier::DefaultW),
+                        GET_OPT("filmic_uncharted3_exposure_bias", FilmicUnchartedApplier::DefaultExposureBias));
+            }
+#endif
             else if (tone_map_operator == Piecewise.id)
             {
                 const float toe_strength =
@@ -353,6 +407,7 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
         // No parameters.
     }
 
+#if 0
     // Filmic (Uncharted)
     {
         add_numeric_param_metadata(
@@ -370,7 +425,7 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
             "B (linear strength)",
             "0.0", "hard",              // min
             "1.0", "hard",              // max
-            "0.50",                     // FilmicUnchartedApplier::DefaultB
+            "0.30",                     // FilmicUnchartedApplier::DefaultB
             FilmicUncharted.id);
 
         add_numeric_param_metadata(
@@ -427,6 +482,55 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
             "2.0",                      // FilmicUnchartedApplier::DefaultExposureBias
             FilmicUncharted.id);
     }
+#else
+    // Filmic (Uncharted) 1
+    {
+        #define ADD_PARAM_1(name, label, max_value, default_value) \
+            add_numeric_param_metadata(metadata, name, label, "0.0", "hard", max_value, "hard", default_value, FilmicUncharted1.id);
+
+        // Original presentation values:
+        ADD_PARAM_1("filmic_uncharted1_A", "A (shoulder strength)", "1.0", "0.22");
+        ADD_PARAM_1("filmic_uncharted1_B", "B (linear strength)", "1.0", "0.30");
+        ADD_PARAM_1("filmic_uncharted1_C", "C (linear angle)", "1.0", "0.10");
+        ADD_PARAM_1("filmic_uncharted1_D", "D (toe strength)", "1.0", "0.20");
+        ADD_PARAM_1("filmic_uncharted1_E", "E (toe numerator)", "1.0", "0.01");
+        ADD_PARAM_1("filmic_uncharted1_F", "F (toe denominator)", "1.0", "0.30");
+        ADD_PARAM_1("filmic_uncharted1_W", "Linear white point", "1.0", "11.2");
+        ADD_PARAM_1("filmic_uncharted1_exposure_bias", "Exposure bias", "10.0", "2.0");
+    }
+
+    // Filmic (Uncharted) 2
+    {
+        #define ADD_PARAM_2(name, label, max_value, default_value) \
+            add_numeric_param_metadata(metadata, name, label, "0.0", "hard", max_value, "hard", default_value, FilmicUncharted2.id);
+
+        // Updated values (on follow up blog):
+        ADD_PARAM_2("filmic_uncharted2_A", "A (shoulder strength)", "1.0", "0.15");
+        ADD_PARAM_2("filmic_uncharted2_B", "B (linear strength)", "1.0", "0.50");
+        ADD_PARAM_2("filmic_uncharted2_C", "C (linear angle)", "1.0", "0.10");
+        ADD_PARAM_2("filmic_uncharted2_D", "D (toe strength)", "1.0", "0.20");
+        ADD_PARAM_2("filmic_uncharted2_E", "E (toe numerator)", "1.0", "0.02");
+        ADD_PARAM_2("filmic_uncharted2_F", "F (toe denominator)", "1.0", "0.30");
+        ADD_PARAM_2("filmic_uncharted2_W", "Linear white point", "1.0", "11.2");
+        ADD_PARAM_2("filmic_uncharted2_exposure_bias", "Exposure bias", "10.0", "2.0");
+    }
+
+    // Filmic (Uncharted) 3
+    {
+        #define ADD_PARAM_3(name, label, max_value, default_value) \
+            add_numeric_param_metadata(metadata, name, label, "0.0", "hard", max_value, "hard", default_value, FilmicUncharted3.id);
+
+        // Values used in MJP's BakingLab
+        ADD_PARAM_3("filmic_uncharted3_A", "A (shoulder strength)", "10.0", "4.0");
+        ADD_PARAM_3("filmic_uncharted3_B", "B (linear strength)", "10.0", "5.0");
+        ADD_PARAM_3("filmic_uncharted3_C", "C (linear angle)", "1.0", "0.12");
+        ADD_PARAM_3("filmic_uncharted3_D", "D (toe strength)", "20.0", "13.0");
+        ADD_PARAM_3("filmic_uncharted3_E", "E (toe numerator)", "1.0", "0.01");
+        ADD_PARAM_3("filmic_uncharted3_F", "F (toe denominator)", "1.0", "0.30");
+        ADD_PARAM_3("filmic_uncharted3_W", "Linear white point", "1.0", "6.0");
+        ADD_PARAM_3("filmic_uncharted3_exposure_bias", "Exposure bias", "10.0", "1.0");
+    }
+#endif
 
     // Piecewise
     {
