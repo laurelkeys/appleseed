@@ -160,6 +160,8 @@ namespace
                     TONE_MAP_OPERATOR_ARRAY,
                     context);
 
+            m_clip_values = m_params.get_optional("clip_values", true, context);
+
             //@Todo add new TMOs
 
             #define GET_OPT(name, default_value) m_params.get_optional(name, default_value, context)
@@ -287,14 +289,29 @@ namespace
 
         void execute(Frame& frame, const std::size_t thread_count) const override
         {
+            const CanvasProperties& props = frame.image().properties();
             Image& image = frame.image();
 
             // Apply the selected tone mapping operator to each image tile, in parallel.
             m_tone_map->apply_on_tiles(image, thread_count);
+
+            if (m_clip_values)
+            {
+                for (std::size_t y = 0; y < props.m_canvas_height; ++y)
+                {
+                    for (std::size_t x = 0; x < props.m_canvas_width; ++x)
+                    {
+                        Color3f color; // RGB
+                        image.get_pixel(x, y, color);
+                        image.set_pixel(x, y, saturate(color));
+                    }
+                }
+            }
         }
 
       private:
         ToneMapApplier*     m_tone_map;
+        bool                m_clip_values;
     };
 }
 
@@ -379,6 +396,15 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
     DictionaryArray metadata;
 
     add_common_input_metadata(metadata);
+
+    //@Todo remove (?)
+    metadata.push_back(
+        Dictionary()
+            .insert("name", "clip_values")
+            .insert("label", "Clip values")
+            .insert("type", "boolean")
+            .insert("use", "optional")
+            .insert("default", "true"));
 
     metadata.push_back(
         Dictionary()

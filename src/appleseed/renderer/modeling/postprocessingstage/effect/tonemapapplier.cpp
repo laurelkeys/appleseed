@@ -77,7 +77,7 @@ void ToneMapApplier::apply(
             pixel.unpremultiply_in_place();
 
             tone_map(pixel.rgb());
-            pixel = saturate(pixel); // TODO make this an option (?)
+            // pixel = saturate(pixel); // TODO make this an option (?)
 
             pixel.premultiply_in_place();
             tile.set_pixel(x, y, pixel);
