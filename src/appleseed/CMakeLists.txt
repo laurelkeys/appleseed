@@ -2008,6 +2008,8 @@ set (renderer_modeling_postprocessingstage_sources
     renderer/modeling/postprocessingstage/effect/additiveblendapplier.h
     renderer/modeling/postprocessingstage/effect/brightpassapplier.cpp
     renderer/modeling/postprocessingstage/effect/brightpassapplier.h
+    renderer/modeling/postprocessingstage/effect/clampcolorsapplier.cpp
+    renderer/modeling/postprocessingstage/effect/clampcolorsapplier.h
     renderer/modeling/postprocessingstage/effect/imageeffectapplier.cpp
     renderer/modeling/postprocessingstage/effect/imageeffectapplier.h
     renderer/modeling/postprocessingstage/effect/imageeffectjob.cpp

@@ -32,6 +32,7 @@
 // appleseed.renderer headers.
 #include "renderer/modeling/frame/frame.h"
 #include "renderer/modeling/postprocessingstage/postprocessingstage.h"
+#include "renderer/modeling/postprocessingstage/effect/clampcolorsapplier.h"
 #include "renderer/modeling/postprocessingstage/effect/tonemapapplier.h"
 
 // appleseed.foundation headers.
@@ -71,46 +72,34 @@ namespace
     constexpr const ToneMapOperator AcesNarkowicz       { "ACES (Narkowicz)",       "aces_narkowicz" };
     constexpr const ToneMapOperator AcesUnreal          { "ACES (Unreal)",          "aces_unreal" };
     constexpr const ToneMapOperator FilmicHejl          { "Filmic (Hejl)",          "filmic_hejl" };
-
-    // TODO choose a single one after testing different presets
-    // constexpr const ToneMapOperator FilmicUncharted     { "Filmic (Uncharted)",     "filmic_uncharted" };
-    constexpr const ToneMapOperator FilmicUncharted1    { "Filmic (Uncharted) 1",   "filmic_uncharted1" };
-    constexpr const ToneMapOperator FilmicUncharted2    { "Filmic (Uncharted) 2",   "filmic_uncharted2" };
-    constexpr const ToneMapOperator FilmicUncharted3    { "Filmic (Uncharted) 3",   "filmic_uncharted3" };
-
-    constexpr const ToneMapOperator Piecewise           { "Piecewise",              "piecewise" };
+    constexpr const ToneMapOperator FilmicPiecewise     { "Filmic (Piecewise)",     "filmic_piecewise" };
+    constexpr const ToneMapOperator FilmicUncharted     { "Filmic (Uncharted)",     "filmic_uncharted" };
     constexpr const ToneMapOperator Reinhard            { "Reinhard",               "reinhard" };
     constexpr const ToneMapOperator ReinhardExtended    { "Reinhard (Extended)",    "reinhard_extended" };
-    constexpr const ToneMapOperator DebugToneMap        { "Debug",                  "debug" };
+    constexpr const ToneMapOperator Linear              { "Linear",                 "linear" };
 
-    //@Todo add new TMOs
     #define TONE_MAP_OPERATOR_ARRAY {   \
+        Linear.id,                      \
         AcesNarkowicz.id,               \
         AcesUnreal.id,                  \
         FilmicHejl.id,                  \
-        FilmicUncharted1.id,             \
-        FilmicUncharted2.id,             \
-        FilmicUncharted3.id,             \
-        Piecewise.id,                   \
+        FilmicPiecewise.id,             \
+        FilmicUncharted.id,             \
         Reinhard.id,                    \
         ReinhardExtended.id,            \
-        DebugToneMap.id,                \
     }
 
     #define INSERT_TONE_MAP_OPERATOR(tmo) insert(tmo.label, tmo.id)
 
-    //@Todo add new TMOs
+    // Note: don't expose the Linear operator in .studio.
     #define TONE_MAP_OPERATOR_DICTIONARY Dictionary()   \
         .INSERT_TONE_MAP_OPERATOR(AcesNarkowicz)        \
         .INSERT_TONE_MAP_OPERATOR(AcesUnreal)           \
         .INSERT_TONE_MAP_OPERATOR(FilmicHejl)           \
-        .INSERT_TONE_MAP_OPERATOR(FilmicUncharted1)      \
-        .INSERT_TONE_MAP_OPERATOR(FilmicUncharted2)      \
-        .INSERT_TONE_MAP_OPERATOR(FilmicUncharted3)      \
-        .INSERT_TONE_MAP_OPERATOR(Piecewise)            \
+        .INSERT_TONE_MAP_OPERATOR(FilmicPiecewise)      \
+        .INSERT_TONE_MAP_OPERATOR(FilmicUncharted)      \
         .INSERT_TONE_MAP_OPERATOR(Reinhard)             \
-        .INSERT_TONE_MAP_OPERATOR(ReinhardExtended)     \
-        .INSERT_TONE_MAP_OPERATOR(DebugToneMap)
+        .INSERT_TONE_MAP_OPERATOR(ReinhardExtended)
 
     //
     // Tone map post-processing stage.
@@ -118,7 +107,8 @@ namespace
 
     const char* Model = "tone_map_post_processing_stage";
 
-    constexpr const char* DeafaultToneMapOperatorId = AcesNarkowicz.id;
+    constexpr const char* DeafaultToneMapOperatorId = Linear.id;
+    constexpr bool DeafaultClampColors = true;
 
     class ToneMapPostProcessingStage
       : public PostProcessingStage
@@ -153,6 +143,8 @@ namespace
         {
             const OnFrameBeginMessageContext context("post-processing stage", this);
 
+            m_clamp_colors = m_params.get_optional("clamp_colors", DeafaultClampColors, context);
+
             const std::string tone_map_operator =
                 m_params.get_optional<std::string>(
                     "tone_map_operator",
@@ -160,16 +152,13 @@ namespace
                     TONE_MAP_OPERATOR_ARRAY,
                     context);
 
-            m_clip_values = m_params.get_optional("clip_values", true, context);
-
-            //@Todo add new TMOs
-
-            #define GET_OPT(name, default_value) m_params.get_optional(name, default_value, context)
-
             // Initialize the tone map applier.
             if (tone_map_operator == AcesNarkowicz.id)
             {
-                m_tone_map = new AcesNarkowiczApplier();
+                const float exposure_bias =
+                    m_params.get_optional("aces_narkowicz_exposure_bias", AcesNarkowiczApplier::DefaultExposureBias, context);
+
+                m_tone_map = new AcesNarkowiczApplier(exposure_bias);
             }
             else if (tone_map_operator == AcesUnreal.id)
             {
@@ -179,7 +168,6 @@ namespace
             {
                 m_tone_map = new FilmicHejlApplier();
             }
-#if 0
             else if (tone_map_operator == FilmicUncharted.id)
             {
                 const float A =
@@ -201,61 +189,20 @@ namespace
 
                 m_tone_map = new FilmicUnchartedApplier(A, B, C, D, E, F, W, exposure_bias);
             }
-#else
-            else if (tone_map_operator == FilmicUncharted1.id)
-            {
-                m_tone_map =
-                    new FilmicUnchartedApplier(
-                        GET_OPT("filmic_uncharted1_A", FilmicUnchartedApplier::DefaultA),
-                        GET_OPT("filmic_uncharted1_B", FilmicUnchartedApplier::DefaultB),
-                        GET_OPT("filmic_uncharted1_C", FilmicUnchartedApplier::DefaultC),
-                        GET_OPT("filmic_uncharted1_D", FilmicUnchartedApplier::DefaultD),
-                        GET_OPT("filmic_uncharted1_E", FilmicUnchartedApplier::DefaultE),
-                        GET_OPT("filmic_uncharted1_F", FilmicUnchartedApplier::DefaultF),
-                        GET_OPT("filmic_uncharted1_W", FilmicUnchartedApplier::DefaultW),
-                        GET_OPT("filmic_uncharted1_exposure_bias", FilmicUnchartedApplier::DefaultExposureBias));
-            }
-            else if (tone_map_operator == FilmicUncharted2.id)
-            {
-                m_tone_map =
-                    new FilmicUnchartedApplier(
-                        GET_OPT("filmic_uncharted2_A", FilmicUnchartedApplier::DefaultA),
-                        GET_OPT("filmic_uncharted2_B", FilmicUnchartedApplier::DefaultB),
-                        GET_OPT("filmic_uncharted2_C", FilmicUnchartedApplier::DefaultC),
-                        GET_OPT("filmic_uncharted2_D", FilmicUnchartedApplier::DefaultD),
-                        GET_OPT("filmic_uncharted2_E", FilmicUnchartedApplier::DefaultE),
-                        GET_OPT("filmic_uncharted2_F", FilmicUnchartedApplier::DefaultF),
-                        GET_OPT("filmic_uncharted2_W", FilmicUnchartedApplier::DefaultW),
-                        GET_OPT("filmic_uncharted2_exposure_bias", FilmicUnchartedApplier::DefaultExposureBias));
-            }
-            else if (tone_map_operator == FilmicUncharted3.id)
-            {
-                m_tone_map =
-                    new FilmicUnchartedApplier(
-                        GET_OPT("filmic_uncharted3_A", FilmicUnchartedApplier::DefaultA),
-                        GET_OPT("filmic_uncharted3_B", FilmicUnchartedApplier::DefaultB),
-                        GET_OPT("filmic_uncharted3_C", FilmicUnchartedApplier::DefaultC),
-                        GET_OPT("filmic_uncharted3_D", FilmicUnchartedApplier::DefaultD),
-                        GET_OPT("filmic_uncharted3_E", FilmicUnchartedApplier::DefaultE),
-                        GET_OPT("filmic_uncharted3_F", FilmicUnchartedApplier::DefaultF),
-                        GET_OPT("filmic_uncharted3_W", FilmicUnchartedApplier::DefaultW),
-                        GET_OPT("filmic_uncharted3_exposure_bias", FilmicUnchartedApplier::DefaultExposureBias));
-            }
-#endif
-            else if (tone_map_operator == Piecewise.id)
+            else if (tone_map_operator == FilmicPiecewise.id)
             {
                 const float toe_strength =
-                    m_params.get_optional("piecewise_toe_strength", PiecewiseApplier::DefaultToeStrength, context);
+                    m_params.get_optional("filmic_piecewise_toe_strength", FilmicPiecewiseApplier::DefaultToeStrength, context);
                 const float toe_length =
-                    m_params.get_optional("piecewise_toe_length", PiecewiseApplier::DefaultToeLength, context);
+                    m_params.get_optional("filmic_piecewise_toe_length", FilmicPiecewiseApplier::DefaultToeLength, context);
                 const float shoulder_strength =
-                    m_params.get_optional("piecewise_shoulder_strength", PiecewiseApplier::DefaultShoulderStrength, context);
+                    m_params.get_optional("filmic_piecewise_shoulder_strength", FilmicPiecewiseApplier::DefaultShoulderStrength, context);
                 const float shoulder_length =
-                    m_params.get_optional("piecewise_shoulder_length", PiecewiseApplier::DefaultShoulderLength, context);
+                    m_params.get_optional("filmic_piecewise_shoulder_length", FilmicPiecewiseApplier::DefaultShoulderLength, context);
                 const float shoulder_angle =
-                    m_params.get_optional("piecewise_shoulder_angle", PiecewiseApplier::DefaultShoulderAngle, context);
+                    m_params.get_optional("filmic_piecewise_shoulder_angle", FilmicPiecewiseApplier::DefaultShoulderAngle, context);
 
-                m_tone_map = new PiecewiseApplier(toe_strength, toe_length, shoulder_strength, shoulder_length, shoulder_angle);
+                m_tone_map = new FilmicPiecewiseApplier(toe_strength, toe_length, shoulder_strength, shoulder_length, shoulder_angle);
             }
             else if (tone_map_operator == Reinhard.id)
             {
@@ -273,14 +220,10 @@ namespace
 
                 m_tone_map = new ReinhardExtendedApplier(max_white, use_luminance);
             }
-            else if (tone_map_operator == DebugToneMap.id)
-            {
-                m_tone_map = new DebugToneMapApplier();
-            }
             else
             {
                 // FIXME we shouldn't reach here.. but what if we do?
-                // m_tone_map = nullptr;
+                m_tone_map = new LinearApplier(); // does nothing
                 assert(false);
             }
 
@@ -289,29 +232,23 @@ namespace
 
         void execute(Frame& frame, const std::size_t thread_count) const override
         {
-            const CanvasProperties& props = frame.image().properties();
             Image& image = frame.image();
 
             // Apply the selected tone mapping operator to each image tile, in parallel.
             m_tone_map->apply_on_tiles(image, thread_count);
 
-            if (m_clip_values)
+            // Clamp colors to LDR range [0, 1].
+            if (m_clamp_colors)
             {
-                for (std::size_t y = 0; y < props.m_canvas_height; ++y)
-                {
-                    for (std::size_t x = 0; x < props.m_canvas_width; ++x)
-                    {
-                        Color3f color; // RGB
-                        image.get_pixel(x, y, color);
-                        image.set_pixel(x, y, saturate(color));
-                    }
-                }
+                const ClampColorsApplier clamp_colors;
+                clamp_colors.apply_on_tiles(image, thread_count);
             }
+
         }
 
       private:
         ToneMapApplier*     m_tone_map;
-        bool                m_clip_values;
+        bool                m_clamp_colors;
     };
 }
 
@@ -397,15 +334,6 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
 
     add_common_input_metadata(metadata);
 
-    //@Todo remove (?)
-    metadata.push_back(
-        Dictionary()
-            .insert("name", "clip_values")
-            .insert("label", "Clip values")
-            .insert("type", "boolean")
-            .insert("use", "optional")
-            .insert("default", "true"));
-
     metadata.push_back(
         Dictionary()
             .insert("name", "tone_map_operator")
@@ -416,11 +344,24 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
             .insert("default", DeafaultToneMapOperatorId)
             .insert("on_change", "rebuild_form"));
 
-    //@Todo add new TMO params
+    metadata.push_back(
+        Dictionary()
+            .insert("name", "clamp_colors")
+            .insert("label", "Clamp Colors")
+            .insert("type", "boolean")
+            .insert("use", "optional")
+            .insert("default", "true"));
 
     // ACES (Narkowicz)
     {
-        // No parameters.
+        add_numeric_param_metadata(
+            metadata,
+            "aces_narkowicz_exposure_bias",
+            "Exposure bias",
+            "0.0", "hard",              // min
+            "10.0", "hard",             // max
+            "0.8",                      // AcesNarkowiczApplier::DefaultExposureBias
+            AcesNarkowicz.id);
     }
 
     // ACES (Unreal)
@@ -433,13 +374,12 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
         // No parameters.
     }
 
-#if 0
     // Filmic (Uncharted)
     {
         add_numeric_param_metadata(
             metadata,
             "filmic_uncharted_A",
-            "A (shoulder strength)",
+            "Shoulder Strength (A)",
             "0.0", "hard",              // min
             "1.0", "hard",              // max
             "0.22",                     // FilmicUnchartedApplier::DefaultA
@@ -448,7 +388,7 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
         add_numeric_param_metadata(
             metadata,
             "filmic_uncharted_B",
-            "B (linear strength)",
+            "Linear Strength (B)",
             "0.0", "hard",              // min
             "1.0", "hard",              // max
             "0.30",                     // FilmicUnchartedApplier::DefaultB
@@ -457,7 +397,7 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
         add_numeric_param_metadata(
             metadata,
             "filmic_uncharted_C",
-            "C (linear angle)",
+            "Linear Angle (C)",
             "0.0", "hard",              // min
             "1.0", "hard",              // max
             "0.10",                     // FilmicUnchartedApplier::DefaultC
@@ -466,7 +406,7 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
         add_numeric_param_metadata(
             metadata,
             "filmic_uncharted_D",
-            "D (toe strength)",
+            "Toe Strength (D)",
             "0.0", "hard",              // min
             "1.0", "hard",              // max
             "0.20",                     // FilmicUnchartedApplier::DefaultD
@@ -475,7 +415,7 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
         add_numeric_param_metadata(
             metadata,
             "filmic_uncharted_E",
-            "E (toe numerator)",
+            "Toe Numerator (E)",
             "0.0", "hard",              // min
             "1.0", "hard",              // max
             "0.01",                     // FilmicUnchartedApplier::DefaultE
@@ -484,7 +424,7 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
         add_numeric_param_metadata(
             metadata,
             "filmic_uncharted_F",
-            "F (toe denominator)",
+            "Toe Denominator (F)",
             "0.0", "hard",              // min
             "1.0", "hard",              // max
             "0.30",                     // FilmicUnchartedApplier::DefaultF
@@ -508,106 +448,53 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
             "2.0",                      // FilmicUnchartedApplier::DefaultExposureBias
             FilmicUncharted.id);
     }
-#else
-    // Filmic (Uncharted) 1
-    {
-        #define ADD_PARAM_1(name, label, max_value, default_value) \
-            add_numeric_param_metadata(metadata, name, label, "0.0", "hard", max_value, "hard", default_value, FilmicUncharted1.id);
 
-        // Original presentation values:
-        ADD_PARAM_1("filmic_uncharted1_A", "A (shoulder strength)", "1.0", "0.22");
-        ADD_PARAM_1("filmic_uncharted1_B", "B (linear strength)", "1.0", "0.30");
-        ADD_PARAM_1("filmic_uncharted1_C", "C (linear angle)", "1.0", "0.10");
-        ADD_PARAM_1("filmic_uncharted1_D", "D (toe strength)", "1.0", "0.20");
-        ADD_PARAM_1("filmic_uncharted1_E", "E (toe numerator)", "1.0", "0.01");
-        ADD_PARAM_1("filmic_uncharted1_F", "F (toe denominator)", "1.0", "0.30");
-        ADD_PARAM_1("filmic_uncharted1_W", "Linear white point", "1.0", "11.2");
-        ADD_PARAM_1("filmic_uncharted1_exposure_bias", "Exposure bias", "10.0", "2.0");
-    }
-
-    // Filmic (Uncharted) 2
-    {
-        #define ADD_PARAM_2(name, label, max_value, default_value) \
-            add_numeric_param_metadata(metadata, name, label, "0.0", "hard", max_value, "hard", default_value, FilmicUncharted2.id);
-
-        // Updated values (on follow up blog):
-        ADD_PARAM_2("filmic_uncharted2_A", "A (shoulder strength)", "1.0", "0.15");
-        ADD_PARAM_2("filmic_uncharted2_B", "B (linear strength)", "1.0", "0.50");
-        ADD_PARAM_2("filmic_uncharted2_C", "C (linear angle)", "1.0", "0.10");
-        ADD_PARAM_2("filmic_uncharted2_D", "D (toe strength)", "1.0", "0.20");
-        ADD_PARAM_2("filmic_uncharted2_E", "E (toe numerator)", "1.0", "0.02");
-        ADD_PARAM_2("filmic_uncharted2_F", "F (toe denominator)", "1.0", "0.30");
-        ADD_PARAM_2("filmic_uncharted2_W", "Linear white point", "1.0", "11.2");
-        ADD_PARAM_2("filmic_uncharted2_exposure_bias", "Exposure bias", "10.0", "2.0");
-    }
-
-    // Filmic (Uncharted) 3
-    {
-        #define ADD_PARAM_3(name, label, max_value, default_value) \
-            add_numeric_param_metadata(metadata, name, label, "0.0", "hard", max_value, "hard", default_value, FilmicUncharted3.id);
-
-        // Values used in MJP's BakingLab
-        ADD_PARAM_3("filmic_uncharted3_A", "A (shoulder strength)", "10.0", "4.0");
-        ADD_PARAM_3("filmic_uncharted3_B", "B (linear strength)", "10.0", "5.0");
-        ADD_PARAM_3("filmic_uncharted3_C", "C (linear angle)", "1.0", "0.12");
-        ADD_PARAM_3("filmic_uncharted3_D", "D (toe strength)", "20.0", "13.0");
-        ADD_PARAM_3("filmic_uncharted3_E", "E (toe numerator)", "1.0", "0.01");
-        ADD_PARAM_3("filmic_uncharted3_F", "F (toe denominator)", "1.0", "0.30");
-        ADD_PARAM_3("filmic_uncharted3_W", "Linear white point", "1.0", "6.0");
-        ADD_PARAM_3("filmic_uncharted3_exposure_bias", "Exposure bias", "10.0", "1.0");
-    }
-#endif
-
-    // Piecewise
+    // Filmic (Piecewise)
     {
         add_numeric_param_metadata(
             metadata,
-            "piecewise_toe_strength",
+            "filmic_piecewise_toe_strength",
             "Toe Strength",
             "0.0", "soft",              // min
             "1.0", "soft",              // max
-            "0.0",                      // PiecewiseApplier::DefaultToeStrength
-            Piecewise.id);
+            "0.0",                      // FilmicPiecewiseApplier::DefaultToeStrength
+            FilmicPiecewise.id);
 
         add_numeric_param_metadata(
             metadata,
-            "piecewise_toe_length",
+            "filmic_piecewise_toe_length",
             "Toe Length",
             "0.0", "soft",              // min
             "1.0", "soft",              // max
-            "0.5",                      // PiecewiseApplier::DefaultToeLength
-            Piecewise.id);
+            "0.5",                      // FilmicPiecewiseApplier::DefaultToeLength
+            FilmicPiecewise.id);
 
         add_numeric_param_metadata(
             metadata,
-            "piecewise_shoulder_strength",
+            "filmic_piecewise_shoulder_strength",
             "Shoulder Strength",
             "0.0", "soft",              // min
             "1.0", "soft",              // max
-            "0.0",                      // PiecewiseApplier::DefaultShoulderStrength
-            Piecewise.id);
+            "0.0",                      // FilmicPiecewiseApplier::DefaultShoulderStrength
+            FilmicPiecewise.id);
 
         add_numeric_param_metadata(
             metadata,
-            "piecewise_shoulder_length",
+            "filmic_piecewise_shoulder_length",
             "Shoulder Length (F-stops)",
-
-            // FIXME this is expressed in F-stops instead of
-            // as a ratio, thus, what should be its min/max?
             "0.00001", "hard",          // min
-            "10.0", "soft",             // max
-
-            "0.5",                      // PiecewiseApplier::DefaultShoulderLength
-            Piecewise.id);
+            "32.0", "soft",             // max
+            "0.5",                      // FilmicPiecewiseApplier::DefaultShoulderLength
+            FilmicPiecewise.id);
 
         add_numeric_param_metadata(
             metadata,
-            "piecewise_shoulder_angle",
+            "filmic_piecewise_shoulder_angle",
             "Shoulder Angle",
             "0.0", "soft",              // min
             "1.0", "soft",              // max
-            "0.0",                      // PiecewiseApplier::DefaultShoulderAngle
-            Piecewise.id);
+            "0.0",                      // FilmicPiecewiseApplier::DefaultShoulderAngle
+            FilmicPiecewise.id);
     }
 
     // Reinhard
@@ -625,7 +512,7 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
         add_numeric_param_metadata(
             metadata,
             "reinhard_extended_max_white",
-            "Lmax",
+            "Max White",
 
             // FIXME min/max luminance values can only
             // be accurately computed at run-time.. :(
