@@ -69,6 +69,7 @@ namespace
         const char* id;
     };
 
+    constexpr const ToneMapOperator Linear              { "Linear",                 "linear" };
     constexpr const ToneMapOperator AcesNarkowicz       { "ACES (Narkowicz)",       "aces_narkowicz" };
     constexpr const ToneMapOperator AcesUnreal          { "ACES (Unreal)",          "aces_unreal" };
     constexpr const ToneMapOperator FilmicHejl          { "Filmic (Hejl)",          "filmic_hejl" };
@@ -76,7 +77,6 @@ namespace
     constexpr const ToneMapOperator FilmicUncharted     { "Filmic (Uncharted)",     "filmic_uncharted" };
     constexpr const ToneMapOperator Reinhard            { "Reinhard",               "reinhard" };
     constexpr const ToneMapOperator ReinhardExtended    { "Reinhard (Extended)",    "reinhard_extended" };
-    constexpr const ToneMapOperator Linear              { "Linear",                 "linear" };
 
     #define TONE_MAP_OPERATOR_ARRAY {   \
         Linear.id,                      \
@@ -91,8 +91,8 @@ namespace
 
     #define INSERT_TONE_MAP_OPERATOR(tmo) insert(tmo.label, tmo.id)
 
-    // Note: don't expose the Linear operator in .studio.
     #define TONE_MAP_OPERATOR_DICTIONARY Dictionary()   \
+        .INSERT_TONE_MAP_OPERATOR(Linear)               \
         .INSERT_TONE_MAP_OPERATOR(AcesNarkowicz)        \
         .INSERT_TONE_MAP_OPERATOR(AcesUnreal)           \
         .INSERT_TONE_MAP_OPERATOR(FilmicHejl)           \
