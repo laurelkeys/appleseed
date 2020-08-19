@@ -138,6 +138,7 @@ class MainWindow
     QAction*                                    m_action_start_final_rendering;
     QAction*                                    m_action_pause_resume_rendering;
     QAction*                                    m_action_stop_rendering;
+    QAction*                                    m_action_post_process_rendering;
     QAction*                                    m_action_rendering_settings;
     QAction*                                    m_action_fullscreen;
 
@@ -256,6 +257,7 @@ class MainWindow
     void slot_pack_project_as();
     void slot_close_project();
     void slot_project_modified();
+    void slot_post_processing_stage_modified(const std::uint64_t stage_uid);
 
     // Project file monitoring.
     void slot_toggle_project_file_monitoring(const bool checked);
@@ -275,6 +277,7 @@ class MainWindow
         const bool      successful);
     void slot_pause_or_resume_rendering(
         const bool      checked);
+    void slot_post_process_rendering();
     void slot_rendering_end();
     void slot_camera_changed();
 
