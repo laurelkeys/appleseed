@@ -1343,7 +1343,7 @@ void MainWindow::apply_post_processing_stage(
     if (stage.on_frame_begin(*project, nullptr, recorder, nullptr))
     {
         // Execute the post-processing stage.
-        stage.execute(working_frame);
+        stage.execute(working_frame, /*thread_count*/4); //@FIXME
 
         // Blit the frame copy into the render widget.
         for (const_each<RenderTabCollection> i = m_render_tabs; i; ++i)
@@ -1783,14 +1783,28 @@ void MainWindow::slot_post_process_rendering()
 
         RENDERER_LOG_INFO("previewing post-processing stage:");
 
-        // Apply post-processing stages.
-        //@FIXME follow stage ordering, like in MasterRenderer::postprocess()
-        //@NOTE actually.. it might make more sense to only preview a single effect
-        // at a time (considering this is triggered when parameters are changed.. ?)
-        for (PostProcessingStage& stage : frame->post_processing_stages())
+        //@COPYPASTED from MasterRenderer::postprocess().. maybe we should expose it (?)
+        std::vector<PostProcessingStage*> ordered_stages;
         {
-            RENDERER_LOG_INFO("  \"%s\"", stage.get_path().c_str());
-            apply_post_processing_stage(stage, working_frame.ref());
+            ordered_stages.reserve(frame->post_processing_stages().size());
+            for (PostProcessingStage& stage : frame->post_processing_stages())
+                ordered_stages.push_back(&stage);
+
+            std::sort(
+                ordered_stages.begin(),
+                ordered_stages.end(),
+                [](PostProcessingStage* lhs, PostProcessingStage* rhs)
+                {
+                    return lhs->get_order() < rhs->get_order();
+                });
+
+        }
+
+        // Apply post-processing stages in order.
+        for (PostProcessingStage* stage : ordered_stages)
+        {
+            RENDERER_LOG_INFO("  \"%s\"", stage->get_path().c_str());
+            apply_post_processing_stage(*stage, working_frame.ref());
         }
     }
 }
