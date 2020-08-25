@@ -350,6 +350,7 @@ DictionaryArray ToneMapPostProcessingStageFactory::get_input_metadata() const
             .insert("label", "Clamp Colors")
             .insert("type", "boolean")
             .insert("use", "optional")
+            .insert("help", "Clamp color values to [0.0, 1.0] range after tone mapping")
             .insert("default", "true"));
 
     // ACES (Narkowicz)

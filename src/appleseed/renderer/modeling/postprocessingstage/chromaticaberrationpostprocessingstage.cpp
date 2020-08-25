@@ -161,6 +161,7 @@ DictionaryArray ChromaticAberrationPostProcessingStageFactory::get_input_metadat
                         .insert("value", "1.0")
                         .insert("type", "hard"))
             .insert("use", "optional")
+            .insert("help", "Chromatic Aberration strength (increases distortion towards image edges)")
             .insert("default", "0.4"));
 
     metadata.push_back(
@@ -177,6 +178,7 @@ DictionaryArray ChromaticAberrationPostProcessingStageFactory::get_input_metadat
                         .insert("value", "20")
                         .insert("type", "soft"))
             .insert("use", "optional")
+            .insert("help", "Color fringing granularity (higher values lead to a smoother gradient)")
             .insert("default", "6"));
 
     return metadata;

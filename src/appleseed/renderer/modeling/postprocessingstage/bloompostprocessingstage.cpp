@@ -414,6 +414,7 @@ DictionaryArray BloomPostProcessingStageFactory::get_input_metadata() const
                         .insert("value", "5")
                         .insert("type", "soft"))
             .insert("use", "optional")
+            .insert("help", "Bloom spread distance")
             .insert("default", "4"));
 
     metadata.push_back(
@@ -430,6 +431,7 @@ DictionaryArray BloomPostProcessingStageFactory::get_input_metadata() const
                         .insert("value", "1.0")
                         .insert("type", "soft"))
             .insert("use", "optional")
+            .insert("help", "Bloom strength (for blending with the original image)")
             .insert("default", "0.1"));
 
     metadata.push_back(
@@ -446,6 +448,7 @@ DictionaryArray BloomPostProcessingStageFactory::get_input_metadata() const
                         .insert("value", "10.0")
                         .insert("type", "soft"))
             .insert("use", "optional")
+            .insert("help", "Filters out pixels under this brightness level")
             .insert("default", "1.0"));
 
     metadata.push_back(
@@ -462,6 +465,7 @@ DictionaryArray BloomPostProcessingStageFactory::get_input_metadata() const
                         .insert("value", "1.0")
                         .insert("type", "hard"))
             .insert("use", "optional")
+            .insert("help", "Softens the transition between under- and over-threshold values")
             .insert("default", "0.5"));
 
     metadata.push_back(
@@ -470,6 +474,7 @@ DictionaryArray BloomPostProcessingStageFactory::get_input_metadata() const
             .insert("label", "Debug Blur")
             .insert("type", "boolean")
             .insert("use", "optional")
+            .insert("help", "Shows only the bloom effect (instead of blending it with the original image)")
             .insert("default", "false"));
 
     return metadata;

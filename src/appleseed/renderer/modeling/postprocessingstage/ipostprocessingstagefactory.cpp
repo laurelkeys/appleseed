@@ -54,6 +54,7 @@ void IPostProcessingStageFactory::add_common_input_metadata(DictionaryArray& met
                     .insert("value", "10")
                     .insert("type", "soft"))
             .insert("use", "required")
+            .insert("help", "Relative order in which to process this stage")
             .insert("default", "0"));
 }
 
